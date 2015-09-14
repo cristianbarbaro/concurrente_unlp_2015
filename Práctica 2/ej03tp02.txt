@@ -1,0 +1,32 @@
+sem profe_corrigiendo = 0;
+sem profe_ocupado= 1;
+array tarea_correcta[40] = ([40] 0);
+sem esperando[40] = ([40] 0);
+int alumno;
+
+
+process Alumno [i = 1..40]
+"realizar tarea";
+while (not tarea_correcta[i])
+	P(profe_ocupado);
+	"entregar tarea";
+	alumno= i;
+	V(profe_corrigiendo);
+	P (esperando[i]);
+	if (not tarea_correcta[i])
+		"corregir errores";
+}
+
+
+process Maestra{ 
+int cant = 0;
+while (cant < 40)
+	P (profe_corrigiendo);
+	"corregir tarea devuelve true o false";
+	if (tarea_bien)
+		tarea_correcta[alumno] = true;
+		cant ++;
+	
+	V(profe_ocupado);
+	V(esperando[i]);
+}
