@@ -1,0 +1,64 @@
+Cola q; 
+Array estado [1..N] = "";
+Array resultado [1..N] = false;
+Sem s_cola = 1;
+Sem s_espera_cola [N] = ([N] 0);
+Sem s_cola = 1;
+Sem s_consulta[A] = 0;
+Sem s_reloj = 0;
+Sem s_cantidad_en_cola = 0;
+
+
+process Alumno[i= 1..N] {
+	"hacer ejercicio"
+	while (resultado[i] or estado[i] == "irse")
+		
+		P(s_cola)
+		push (q, i)
+		V(s_cantidad_en_cola)    //Aviso que me encolo.
+		V(s_cola)
+
+		if estado[i]==""	//Si es la primera vez, timer.
+			V(s_reloj[i])
+
+		P(s_espera_cola[i])  //despierta Ay. o reloj. 
+
+		P(s_estado[i])
+		if (estado[i] == "consulta")
+			"realizar la consulta"
+			//Se recibe el resultado en el arreglo.
+		V(s_estado[i])
+} 
+
+
+process Ayudante [a=1..A] {
+	int alumno
+	while("haya alumnos en el aula")
+		P(s_cantidad_en_cola)
+
+		P(s_cola)
+		alumno= pop(q)
+		V(s_cola)
+
+		P(s_estado[alumno])
+
+		if(estado[alumno] == "")
+			estado[alumno] = "consultar"
+			V(s_estado[alumno])
+			V(s_espera_cola[alumno])
+			atender_consulta(resultado[alumno])
+			//y se corrige la consulta
+		else
+			V(estado[alumno])
+}
+
+
+process Reloj[r=1..N]{
+	P(s_reloj[r])  //Espero a que el alumno haga el V.
+	delay (15)
+	P(s_estado[r])
+	if (estado[r] == "")
+		estado[r] = "irse"
+		V(s_espera_cola)
+	V(s_estado[r])
+}

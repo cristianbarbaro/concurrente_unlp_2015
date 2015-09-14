@@ -1,0 +1,44 @@
+Sem s_espera = 0
+Sem mutex_elegir = 1			//Para controlar acceso a la eleccion de tarea.
+Sem mutex_arreglo_cant = 1
+Sem s_contador = 1
+Array cant_tareas_emp [1..E] = 0
+int contador = 0
+
+
+process Empleado[i=1..E] {
+	
+	//Inicio con la barrera, cuando van llegando los empleados:
+	P(s_contador)
+	contador++
+	if (contador < E)
+		V(s_contador)
+		P(s_espera)				//Espera a que llegue el resto del grupo.
+	else
+		for (j = 1 to E - 1)
+			V(s_espera)			//Se libera la barrera.
+		contador = 0
+		V(s_contador)
+	//Se finaliza la barrera, a partir de ahora se lleva a cabo tareas concurrente:
+
+	while (hay_tareas_por_realizar or no_se_termina_el_dia)
+		//Cada uno toma su tarea:
+		P(mutex_elegir)
+		tomar_tarea()
+		V(mutex_elegir)
+		
+		"Llevar a cabo su tarea."
+
+		P(mutex_arreglo_cant)
+		cant_tareas_emp[i]++
+		V(mutex_arreglo_cant)
+
+
+}
+
+
+//Nota : cómo hago para modelar el final del día y la entrega del premio? Acaso necesito otro proceso 
+//que nodele a la fábrica y que se encargue de informar al ganador y cuándo se haya terminado el día?
+
+//Cuando se lleva a cabo su tarea, necesito poner un delay tipo delay(random()) para modelar la espera
+//o retraso de realización de la tarea.
