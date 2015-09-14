@@ -1,0 +1,53 @@
+CANT_POR_GRUPO = 5
+CANT_ELEMENTOS = X
+
+// int contador_empleados = 0 			//No creo que necesite contar los empleados totales ya que sé cuántos son en total.
+int nro_grupo = 1
+int contador = 0
+int nro_tarea = 1
+
+Array contador_elementos_por_tarea [1..N] = 0 //Inicializo todos los elementos en cero por tarea.
+
+Sem s_contador = 1
+Sem s_espera = 0
+Sem s_acceso_contador_por_tarea [N] = 1
+Sem s_tarea = 1
+
+process Empleado[i= 1..M] {
+	int grupo
+	int tarea
+	boolean termino = false
+	
+	P(s_contador)
+	if (contador < CANT_POR_GRUPO)
+		contador++
+		grupo = nro_grupo
+		V(s_contador)
+		P(s_espera)
+		tarea = nro_tarea						//Asigno tarea al proceso, una vez terminada la espera.
+	else
+		contador = 0
+		nro_grupo++
+		for (j= 1..(CANT_POR_GRUPO - 1))
+			V(s_espera)
+		V(s_contador)
+		tarea = nro_tarea
+		P(s_tarea)						//Acá pongo un semáforo, no sé si es necesario, caen cinco juntos?
+		nro_tarea++
+		V(s_tarea)
+
+	//
+
+	while (not termino)	
+		"llevar a cabo su tarea"
+		delay (random())				//El tiempo que le lleva realizar determinada tarea es random.
+		P(s_acceso_contador_por_tarea[tarea])
+		if (contador_elementos_por_tarea[tarea] != CANT_ELEMENTOS)
+			contador_elementos_por_tarea[tarea]++
+			V(s_acceso_contador_por_tarea[tarea])
+		else
+
+
+
+
+}
