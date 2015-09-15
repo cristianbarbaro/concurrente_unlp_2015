@@ -1,11 +1,12 @@
 Sem s_espera = 0								//Semáforo para barrera.
-Sem mutex_elegir = 1						//Para controlar acceso a la eleccion de tarea.
-//Sem mutex_arreglo_cant = 1			//Para controlar acceso al contador.
 Sem s_contador = 1
 Sem s_tareas = 1								//Para controlar acceso al contador de tareas totales.
+Sem s_espera_ganador = 0						//Semáforo para modelar la espera del ganador del día.
+Sem s_aviso_final = 0							//Para avisar a empresa que se han finalizado las tareas del día.
 Array cant_tareas_emp [1..E] = 0
 int contador = 0
 int tareas = 0
+int ganador_del_dia
 
 
 process Empleado[i=1..E] {
@@ -15,35 +16,45 @@ process Empleado[i=1..E] {
 	contador++
 	if (contador < E)
 		V(s_contador)
-		P(s_espera)				//Espera a que llegue el resto del grupo, comienza la barrera.
+		P(s_espera)							//Espera a que llegue el resto del grupo, comienza la barrera.
 	else
 		for (j = 1 to E - 1)
-			V(s_espera)			//Se libera la barrera.
+			V(s_espera)						//Se libera la barrera.
 		contador = 0
 		V(s_contador)
 	//Se finaliza la barrera, a partir de ahora se lleva a cabo tareas concurrente:
 
+	//Proteger tareas, contador
+	P(s_tareas)
 	while (tareas < T)
-		//Cada uno toma su tarea:
-		P(mutex_elegir)
-		tomar_tarea()				//Se le asigna una tarea al empleado.
-		V(mutex_elegir)
+		tareas++							//Incremento la cantidad de tareas totales realizadas.
+		tomar_tarea()						//Se le asigna una tarea al empleado.
+		V(s_tareas)		
 		
-		"Llevar a cabo su tarea."	//Se realiza la tarea que le corresponde al trabajador.
+		"Llevar a cabo su tarea."			//Se realiza la tarea que le corresponde al trabajador.
 		delay(random())
 
+		cant_tareas_emp[i]++				//Incremento la cantidad de tareas realizadas por el empleado.
 		P(s_tareas)
-		tareas++					//Incremento la cantidad de tareas totales realizadas.
-		V(s_tareas)
-		cant_tareas_emp[i]++		//Incremento la cantidad de tareas realizadas por el empleado.
+		//Veo si es la última tarea y aviso a la Empresa:
+		if (tareas == T)
+			V(s_aviso_final)
 
-		//Cómo debo finalizar el proceso una vez que se llegaron a las T tareas realizadas? 
-		//Necesito una nueva barrera? Y si me paso de la cantidad de tareas pedidas? Cómo modelo cuándo llegue al límite de tareas?
+	V(s_tareas)
+	P(s_espera_ganador)
+
+	leer_ganador(ganador_del_dia)
 }
 
 
-//Nota : cómo hago para modelar el final del día y la entrega del premio? Acaso necesito otro proceso 
-//que modele a la fábrica y que se encargue de informar al ganador y cuándo se haya terminado el día?
+process Empresa {
+	//Este proceso se encarga del seleccionar al ganador del día, una vez finalizada todas las tareas.
+	P(s_aviso_final)
+	ganador_del_dia = buscar_maximo(cant_tareas_emp)
+	for j = 1 to N
+		V(s_espera_ganador)
 
-//Cuando se lleva a cabo su tarea, necesito poner un delay tipo delay(random()) para modelar la espera
-//o retraso de realización de la tarea.
+}
+
+
+//Nota : Ver si está bien preguntar si es la última tarea para avisar a la empresa.
