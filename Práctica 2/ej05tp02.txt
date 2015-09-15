@@ -7,49 +7,79 @@ Sem s_cola = 1;
 Sem s_consulta[A] = 0;
 Sem s_reloj = 0;
 Sem s_cantidad_en_cola = 0;
+Sem s_cant_alumnos = 1;					//Semáforo para proteger el acceso a cant_alumnos.
+int cant_alumnos = 0					//Este contador es para contabilizar la cantidad de alumnos atendidos y retirados.
 
 
 process Alumno[i= 1..N] {
 	"hacer ejercicio"
-	while (resultado[i] or estado[i] == "irse")
-		
+	P(s_estado[i])
+	while (not resultado[i] and estado[i] != "irse")
+		V(s_estado[i])
+
 		P(s_cola)
 		push (q, i)
-		V(s_cantidad_en_cola)    //Aviso que me encolo.
 		V(s_cola)
+		V(s_cantidad_en_cola)    		//Aviso que me encolo.
 
-		if estado[i]==""	//Si es la primera vez, timer.
+		if estado[i]==""				//Si es la primera vez, timer.
 			V(s_reloj[i])
 
-		P(s_espera_cola[i])  //despierta Ay. o reloj. 
+		P(s_espera_cola[i]) 			//Lo despierta Ayudante o reloj. 
 
-		P(s_estado[i])
+		P(s_estado[i])			 		//Manipulo el estado, el cual es accedido por varios procesos.
 		if (estado[i] == "consulta")
+			V(s_estado[i])
 			"realizar la consulta"
 			//Se recibe el resultado en el arreglo.
-		V(s_estado[i])
+			ver_resultado(resultado[i])
+			P(s_estado[i])				//Este P es para consultar en el condicional del while principal.
+
+	V(s_estado[i])
 } 
 
 
 process Ayudante [a=1..A] {
 	int alumno
-	while("haya alumnos en el aula")
-		P(s_cantidad_en_cola)
+	//contador de alumnos para finalizar y condicion en el while
+	el que atiende al n debe despertar al resto de losn ayud.
 
+	P(cant_alumnos)
+	while(cant_alumnos < N)
+		V(cant_alumnos)
+		P(s_cantidad_en_cola)			//Espero hasta que tenga algún alumno para atender.
+
+		P(cant_alumnos)
+		cant_alumnos++
 		P(s_cola)
 		alumno= pop(q)
 		V(s_cola)
+		Ṕ(cant_alumnos)
 
 		P(s_estado[alumno])
-
 		if(estado[alumno] == "")
 			estado[alumno] = "consultar"
 			V(s_estado[alumno])
-			V(s_espera_cola[alumno])
 			atender_consulta(resultado[alumno])
+			V(s_espera_cola[alumno])
 			//y se corrige la consulta
 		else
+			if (estado[alumno] == "irse")			
 			V(estado[alumno])
+			P(cant_alumnos)
+			cant_alumnos++
+			V(cant_alumnos)
+
+	V(cant_alumnos)
+
+	//Acá despierto a todos los ayudantes que hayan quedado esperando alumnos.
+	//Esto lo hará el ayudante que haya atendido al último alumno.
+	P(cant_alumnos)
+	if (cant_alumnos == N)
+		V(cant_alumnos)
+		for i = 1 to A - 1
+			V(s_cantidad_en_cola)
+
 }
 
 
