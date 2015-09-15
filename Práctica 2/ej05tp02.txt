@@ -92,3 +92,8 @@ process Reloj[r=1..N]{
 		V(s_espera_cola)
 	V(s_estado[r])
 }
+
+
+Nota: debe tratarse de modelar mejor la situación del pasaje de datos entre alumnos y ayudantes.
+Es una recomendación, pero debería verse mejor cuando un alumno entrega su tarea y luego el ayudante
+genera la devolución correspondiente.
