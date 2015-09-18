@@ -89,7 +89,7 @@ process Reloj[r=1..N]{
 	P(s_estado[r])
 	if (estado[r] == "")
 		estado[r] = "irse"
-		V(s_espera_cola)
+		V(s_espera_cola[r])
 	V(s_estado[r])
 }
 
