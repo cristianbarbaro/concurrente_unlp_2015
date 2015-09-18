@@ -1,53 +1,84 @@
 CANT_POR_GRUPO = 5
 CANT_ELEMENTOS = X
-
-// int contador_empleados = 0 			//No creo que necesite contar los empleados totales ya que sé cuántos son en total.
-int nro_grupo = 1
+int nro_grupo = 1								//Contador de nro de grupo.
 int contador = 0
 int nro_tarea = 1
 
 Array contador_elementos_por_tarea [1..N] = 0 //Inicializo todos los elementos en cero por tarea.
+Array tarea_del_grupo [1..N] = 0
+Array contador_para_salir [1..N] = 0
 
 Sem s_contador = 1
-Sem s_espera = 0
-Sem s_acceso_contador_por_tarea [N] = 1
+Sem s_contador_salida[0..M] = 1
+Sem s_espera_entrada = 0
+Sem s_espera_salida = 0
+Sem s_espera_salida [M] = ([M]0)				//Semáforo para controlar la salida del grupo.
+Sem s_acceso_contador_por_tarea [N] = 1			//control de acceso al contador de tareas por grupo.
 Sem s_tarea = 1
+
 
 process Empleado[i= 1..M] {
 	int grupo
 	int tarea
-	boolean termino = false
 	
+	//Armo la barrera para crear los grupos:
 	P(s_contador)
 	if (contador < CANT_POR_GRUPO)
+	{
 		contador++
-		grupo = nro_grupo
+		grupo = nro_grupo						//Le asigno el nro de su grupo.
 		V(s_contador)
-		P(s_espera)
-		tarea = nro_tarea						//Asigno tarea al proceso, una vez terminada la espera.
-	else
+		P(s_espera_entrada)						//Espero al resto del grupo.
+	}
+	else{
 		contador = 0
 		nro_grupo++
 		for (j= 1..(CANT_POR_GRUPO - 1))
-			V(s_espera)
+			V(s_espera_entrada)					//Despierto al resto del grupo.
 		V(s_contador)
-		tarea = nro_tarea
-		P(s_tarea)						//Acá pongo un semáforo, no sé si es necesario, caen cinco juntos?
+		
+		//Acá asigno la tarea, ya que está todo el grupo armado:
+		P(s_tarea)
+		tarea_del_grupo[grupo] = nro_tarea		//Esto puede ser un arreglo de tareas (algún objeto).
 		nro_tarea++
-		V(s_tarea)
-
-	//
-
-	while (not termino)	
-		"llevar a cabo su tarea"
-		delay (random())				//El tiempo que le lleva realizar determinada tarea es random.
-		P(s_acceso_contador_por_tarea[tarea])
-		if (contador_elementos_por_tarea[tarea] != CANT_ELEMENTOS)
-			contador_elementos_por_tarea[tarea]++
-			V(s_acceso_contador_por_tarea[tarea])
-		else
+		V(s_tarea) 
+	}
 
 
+	P(s_acceso_contador_por_tarea [grupo])
+	while (contador_elementos_por_tarea[grupo]< CANT_ELEMENTOS){
+		contador_elementos_por_tarea[grupo]++	//Al incrementar primero el contador, otro no toma elem.
+		tomar_elemento(tarea_del_grupo[grupo])
+		V(s_acceso_contador_por_tarea[grupo])
+		delay (random())						//El tiempo que le lleva realizar determinada tarea es random.
+		P(s_acceso_contador_por_tarea[grupo])
+	}
 
+	V(s_acceso_contador_por_tarea[tarea])		//Si sale cuando se terminó, debo liberar el semáforo.
+
+	//Ahora debo dormir al proceso hasta que todos hayan finalizado sus tareas, entonces se irán.
+	//Acá hago otra barrera para la salida.
+	//Deben esperarse hasta que llegue el último, necesito un contador.
+
+	P(s_contador_salida[grupo])
+	if (contador_para_salir[grupo]< CANT__POR_GRUPO){
+		contador_para_salir[grupo]++
+		V(s_contador_salida[grupo])
+		P(s_espera_salida[grupo])
+	}
+	else{ 
+		for (i = 1 to CANT_POR_GRUPO -1)
+			V(s_espera_salida[grupo])
+		V(s_contador_salida)
+	}
+
+	//Acá debo modelar la salida de la fábrica, que no debe joder la entrada:
+	//Cómo modelo el caso de entrada y salida?
 
 }
+
+
+NOTA: según ayudante, interferencia se refiere a tener dos semáforos diferentes para entrada y salida. De esta 
+manera se evita cualquier tipo de problema.
+
+DUDA: Todos los grupos deben hacer exactamente X tareas o ese valor se toma de algún sitio y difiere entre grupos?
