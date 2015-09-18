@@ -1,0 +1,55 @@
+Cola cola_espera;						//En esta cola, se van a encolar los camiones mientras esperan descargar.
+Array estado[1..N]= "";						//Se controla el estado de cada camión (si está, se fue, o espera).
+
+Sem s_reloj[1..N] = 0;					//Para controlar cada camión su reloj.
+Sem s_cola = 1;							//Controlo acceso a la cola.
+Sem s_estado[1..N] = 1;					//Para controlar el acceso estado de cada uno.
+Sem s_espera[1..N] = 0;					//Para manejar la espera. Será despertado por reloj o un compañero.
+Sem s_descargando = 1;
+
+
+Process Camion[i = 1..N]{
+	int siguiente;
+
+	//Llega el camión al lugar de descarga.
+	P(s_cola);
+	if (not cola_espera.isEmpty()){		//Si la cola no está vacía, significa que hay alguien descargando.
+		cola_espera.push (i);			//Me encolo.
+		V(s_cola);						//Libero la cola.
+		V(s_reloj[i]);					//Inicio mi reloj.
+		P(s_espera[i]);					//Me pongo a esperar a que me despierten.
+	}else{
+		V(s_cola);						//La cola debe ser liberada sí o sí.	
+	}
+
+	P(s_estado[i]);
+	if (estado[i] != "irse"){			//Antes de realizar la descarga, veo si el loco se fue porque estuvo > 2hs.
+		estado[i] = "descargando";		//No lo uso por el momento.
+		V(s_estado[i]);
+		//Se lleva a cabo la descarga del camión.
+		delay(random());
+	}else{
+		V(s_estado[i]);
+	}
+
+	//Si estaba para irse, de todas maneras debe despertar al siguiente proceso, sin importar la condición del if de arriba.
+	P(s_cola);
+	if (not cola_espera.isEmpty()){
+		siguiente = cola_espera.pop();	//Saco el siguiente de la cola y lo despierto, en caso que haya alguien en la cola.
+		V(s_espera[siguiente]);
+	}
+	V(s_cola);
+	//El camión se retira.
+}
+
+
+Process Reloj [j = 1..N]{
+	P(s_reloj[j]);
+	delay(120);							//Espero 2 horas.
+	P(s_estado[j]);
+	if (s_estado[j] == ""){
+		s_estado[j] = "irse";
+		V(s_espera[j]);					//Dentro del if, o sino lo haría dos veces, una el camión anterior y el reloj.
+	}
+	V(s_estado[j]);
+}
