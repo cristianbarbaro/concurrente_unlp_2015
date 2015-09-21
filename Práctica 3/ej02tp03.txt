@@ -1,5 +1,7 @@
 # Implemente el acceso a una base de datos de solo lectura que puede atender a lo sumo 5 consultas simúltaneas.
 
+#Solucíón usando WHILE:
+
 Process Lector [i = 1..N]{
 	while (true){
 		AdminBD.ingresar_bd();
@@ -16,7 +18,7 @@ Monitor AdminBD {
 	int cantidad = 0;
 
 	procedure ingresar_bd{
-		while (cantidad > 5){
+		while (cantidad == 5){
 			wait(cola);
 		}
 		cantidad++;
