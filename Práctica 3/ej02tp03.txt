@@ -1,0 +1,29 @@
+# Implemente el acceso a una base de datos de solo lectura que puede atender a lo sumo 5 consultas simúltaneas.
+
+Process Lector [i = 1..N]{
+	while (true){
+		AdminBD.ingresar_bd();
+		"entro a la base de datos";
+		"llevo a cabo la lectura en la base de datos";
+		AdminBD.salir_bd();
+		"trabajo con la información leída";
+	}
+}
+
+
+Monitor AdminBD {
+	cond cola;
+	int cantidad = 0;
+
+	procedure ingresar_bd{
+		while (cantidad > 5){
+			wait(cola);
+		}
+		cantidad++;
+	}
+
+	procedure salir_bd{
+		cantidad--;
+		signal_all(cola);					//Despierto a todos los procesos dormidos así compiten entre sí para acceder BD.
+	}
+}
