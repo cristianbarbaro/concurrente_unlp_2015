@@ -1,0 +1,63 @@
+# Enunciado: suponga que se dispone de un puente por el cual puede pasar un solo auto a la vez. Un auto pide permiso
+# para pasar por el puente, cruza por el mismo y luego sigue su camino.
+# Solución propuesta (inicial) del ejercicio:
+
+Monitor Puente
+	Var cola: cond; cant:integer:= 0;
+	Procedure entrarPuente (au: integer)
+		do ( cant > 0) wait (cola)
+		cant:= cant + 1;
+	end;
+	Procedure salirPuente (au: integer)
+		cant:= cant - 1;
+		Signal(cola);
+	End;
+
+Auto [I:1..M]
+	Puente. entrarPuente (i);
+	“el auto cruza el puente”
+	Puente. salirPuente(i);
+
+
+a) ¿El código funciona correctamente? Justifique su respuesta.
+RTA:
+
+b) ¿Se podría realizar el mismo programa reduciendo la cantidad de variables? En caso afirmativo, rescriba el
+código utilizando la menor cantidad posible de variables.
+RTA:
+
+c) ¿La solución original respeta el orden de llegada de los vehículos? Si rescribió el código en el punto b), ¿esa
+solución respeta el orden de llegada?
+RTA:
+
+
+Una solución que tiene en cuenta el orden en que fueron ingresados puede ser la siguiente:
+
+Monitor Puente
+	boolean libre = true;
+	cond turno[1..M]; 
+	Cola espera;
+	
+	Procedure entrarPuente (au: integer)
+		if (libre) libre = false;
+		else {
+			espera.push(au);
+			wait(turno[au]);
+		}
+	end;
+
+	Procedure salirPuente (au: integer)
+		int sig;
+		if (espera.isEmpty())
+			libre = true;
+		else {
+			sig = espera.pop();
+			signal(turno[sig]);
+		}
+	End;
+
+Auto [I:1..M]
+	Puente. entrarPuente (i);
+	“el auto cruza el puente”
+	Puente. salirPuente(i);
+
