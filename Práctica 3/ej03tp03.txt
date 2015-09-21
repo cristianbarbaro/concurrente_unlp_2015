@@ -33,3 +33,5 @@ Monitor Maquina {
 		}else libre = true;
 	}
 }
+
+#Dudas con la estructura de datos inventada, está permitido hacerlo?

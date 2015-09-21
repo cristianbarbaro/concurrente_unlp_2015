@@ -1,0 +1,103 @@
+Process Cliente[i=1..N]{
+	String estado = "";
+
+	AdminCola.encolarse(i);						//Esto se administra un poco diferente, como se verá en ese monitor.
+	AdminReloj[i].contar();
+	AdminCliente[i].esperar(estado);
+	if (estado == "atender")
+		"Es atendido";
+}
+
+
+Process Empleado[e=1..2]{
+	string estado;								//Necesito manipular estado localmente, uso variables.
+	integer cantidad_clientes;					//Llevo este contador para saber cuándo terminar.
+	integer cliente;
+
+	AdminCola.cantidad_clientes(cantidad_clientes);
+	while (cantidad_clientes < N){
+		AdminCola.llamar_cliente(cliente);
+		AdminCliente.avisoDeAtencion[cliente](estado);
+		if (estado = "atender")
+			"Es atendido";
+		AdminCola.cantidad_clientes(cantidad_clientes);
+	}
+}
+
+
+Process Reloj[r=1..N]{
+	AdminReloj[r].esperaConteo();				//Espero para comenzar el conteo a que me despierte el cliente.
+	delay(15);
+	AdminCliente.avisoDeReloj[r]():				//Aviso al cliente que ha pasado el tiempo.
+	}
+}
+
+
+Monitor AdminCola{
+	Cola cola_espera;
+	cond c;
+	integer cantidadClientes = 0;				//Llevo un contador de clientes para finalizar luego de atender los N.
+
+	procedure encolarse(int id){
+		cola_espera.push(id);
+		cantidad_clientes++;					//Incremento el contador compartido de cantidad de clientes.
+		signal_all(c);							//Aviso a los empleados que llegué.
+	}
+
+	procedure llamar_cliente(int cliente){
+		if (cola_espera.isEmpty())
+			wait(c);							//Como empleado, me pongo en espera hasta que llegue algún cliente.
+		cliente = cola_espera.pop();
+	}
+
+	procedure cantidad_clientes(integer cantidad){
+		cantidad = cantidad_clientes;
+	}
+}
+
+
+Monitor AdminReloj[r=1..N]{
+	cond c;
+	llegoCliente = false;
+
+	procedure contar(){
+		signal(c);								//Cuando comienza a contar, despierto a mi reloj.
+		llegoCliente = true;
+	}
+
+	procedure esperaConteo(){
+		if (not llegoCliente)
+			wait(c);							//Si no llegó cliente, entonces me duermo (reloj) y espero a que me llame.
+	}
+}
+
+
+Monitor AdminCliente[c=1..N]{
+	cond c;
+	string estado = "";
+
+	procedure esperar(string estadoCliente){
+		if (estadoCliente == ""){
+			wait(c);							//Si el estado no ha cambiado, entonces el chabón queda en espera.
+		}
+		estadoCliente = estado;					//Le seteo el estado que tenga el cliente en ese momento.
+	}
+
+	procedure avisoDeReloj(){
+		if (estado == ""){
+			estado = "reloj";
+			signal(c);							//Cuando seteo el estado, debo despertar al cliente por parte del reloj.
+		}
+		estadoCliente = estado;
+	}
+
+	procedure avisoDeAtencion(){
+		if (estado == ""){
+			estado = "atencion";
+			signal(c);							//Seteo el estado, si aún no habia cambiado y lo despierto para atenderlo.
+		}
+		estadoCliente = estado;					//Nuevamente, seteo su estado hasta el momento, usado fuera del monitor.
+	}
+}
+
+NOTA: consultar si hay que hacer algo más con el tema de que son varios empleados los que trabajan en conjunto.
