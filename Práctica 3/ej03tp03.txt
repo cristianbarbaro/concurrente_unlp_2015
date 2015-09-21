@@ -1,0 +1,35 @@
+Process Investigador [i = 1..100]{
+	int prioridad;									//En algún debe inicializarse su prioridad.
+	while (true){
+		"Lleva a cabo sus tareas";
+		Maquina.pedir_uso(i, prioridad);
+		"Realizar tareas en conjunto con la máquina";
+		Maquina.liberar_maquina(prioridad);
+	}
+
+}
+
+
+//En este caso el monitor es la máquina del laboratorio:
+
+Monitor Maquina {
+	Cola cola_ordenada_espera;						//Al insertar elementos dentro de la misma, se ordenan de min a max.
+	cond turno[1..N] = -1;
+	boolean libre = true;
+
+	procedure pedir_uso(int inv, int prioridad){
+		if (libre) libre = false;
+		else {
+			cola_ordenada_espera.push(inv, prioridad);		//Ordena por orden de prioridad, almacena el id investigador.
+			wait(turno[inv]);
+		}
+	}
+
+	procedure liberar_maquina(int prioridad){
+		int siguiente;
+		if (not cola_ordenada_espera.isEmpty()){
+			siguiente = cola_ordenada_espera.pop(prioridad);
+			signal (turno[siguiente]);
+		}else libre = true;
+	}
+}
