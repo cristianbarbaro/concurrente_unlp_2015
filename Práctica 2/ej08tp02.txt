@@ -40,10 +40,15 @@ Process Camion[i = 1..N]{
 				if (not cola_espera.isEmpty())
 					siguiente = cola_espera.pop();
 			}
+			//Al salir pregunto si la cola quedó vacía y cambio el flag descargando:
+			P(s_estado[siguiente]);
+			if (cola_espera.isEmpty() and estado[siguiente] == "irse"){
+				V(s_estado[siguiente]);
+				descargando = false;
+			}
 			V(s_espera[siguiente]);
 		}
 		V(s_cola);
-		descargando = false;
 		//El camión se retira.
 	}else{
 		V(s_estado[i]);
