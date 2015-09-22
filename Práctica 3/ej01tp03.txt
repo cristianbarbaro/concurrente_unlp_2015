@@ -21,21 +21,25 @@ Auto [I:1..M]
 
 a) ¿El código funciona correctamente? Justifique su respuesta.
 RTA:
+El código funciona bien. Al tener la variable cant no hay problemas cuando un auto está cruzando.
 
 b) ¿Se podría realizar el mismo programa reduciendo la cantidad de variables? En caso afirmativo, rescriba el
 código utilizando la menor cantidad posible de variables.
 RTA:
+Sí, lo que se puede hacer es un procedimiento que se llame pasarCoche y que no libere el monitor hasta que haya pasado el mismo.
+De esta manera, me aseguro que hay exclusión mutua y me quito de encima el uso de la variable cant.
 
 c) ¿La solución original respeta el orden de llegada de los vehículos? Si rescribió el código en el punto b), ¿esa
 solución respeta el orden de llegada?
 RTA:
-
+No, no la respeta. Tampoco la solución que se propone en el inciso b). Al despertar a un proceso, este compite con los recién
+llegados por acceder al monitor y podría no acceder al final. 
 
 Una solución que tiene en cuenta el orden en que fueron ingresados puede ser la siguiente:
 
 Monitor Puente
-	boolean libre = true;
-	cond turno[1..M]; 
+	boolean libre = true;						//Esto lo libero solo cuando no haya coches esperando. Me aseguro que no entrará ningún auto que llegase después de que el proceso en espera se durmió.
+	cond turno[1..M]; 							//Capaz que no sea necesario tener un arreglo ya que es una cola el cv. Solo por las dudas. Queda por consultarlo.
 	Cola espera;
 	
 	Procedure entrarPuente (au: integer)
