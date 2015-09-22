@@ -6,32 +6,37 @@ Process Investigador [i = 1..100]{
 		"Realizar tareas en conjunto con la máquina";
 		Maquina.liberar_maquina(prioridad);
 	}
-
 }
 
 
 //En este caso el monitor es la máquina del laboratorio:
 
 Monitor Maquina {
-	Cola cola_ordenada_espera;						//Al insertar elementos dentro de la misma, se ordenan de min a max.
-	cond turno[1..N] = -1;
-	boolean libre = true;
+	cond colas_prioridades[1..PRIORIDAD];				//Esto es un array de cv colas.
+	Array cantidad_cola_prioridad[1..PRIORIDAD]	= 0;	//PRIORIDAD es una constante que indica el valor min de prior.
+	boolean libre = true;								//Controlo el acceso al monitor, reservando para en espera primero.
 
 	procedure pedir_uso(int inv, int prioridad){
 		if (libre) libre = false;
 		else {
-			cola_ordenada_espera.push(inv, prioridad);		//Ordena por orden de prioridad, almacena el id investigador.
-			wait(turno[inv]);
+			cantidad_cola_prioridad[prioridad]++;		//Incremento el contador de procesos en espera para esa prioridad.
+			wait(colas_prioridades[prioridad]);
 		}
 	}
 
 	procedure liberar_maquina(int prioridad){
 		int siguiente;
-		if (not cola_ordenada_espera.isEmpty()){
-			siguiente = cola_ordenada_espera.pop(prioridad);
-			signal (turno[siguiente]);
-		}else libre = true;
+		int index;
+
+		index = 0;
+		while ((cantidad_cola_prioridad[index] == 0) and (index < cantidad_cola_prioridad.size() - 1)){
+			index++;
+		}
+		//Debo asegurarme de que no finalizó porque llegué al final del arreglo.
+		if(cantidad_cola_prioridad[index] != 0){
+			cantidad_cola_prioridad[index]--;
+			signal(colas_prioridades[index]);				//Esto debería despertar a un proceso en la cola en index.
+		}
+		else libre = true;
 	}
 }
-
-#Dudas con la estructura de datos inventada, está permitido hacerlo?
