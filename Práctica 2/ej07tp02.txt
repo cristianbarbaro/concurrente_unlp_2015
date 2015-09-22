@@ -10,7 +10,8 @@ Array contador_para_salir [1..N] = 0
 
 Sem s_contador = 1
 Sem s_contador_salida[0..M] = 1
-Sem s_espera_entrada = 0
+Sem s_espera_entrada[1..N] = 0					//Debo controlar a cada grupo en la entrada (ya que podría haber problemas)
+												//La idea es que no se toque el sem de cada grupo si está final. el armado de grupos.
 Sem s_espera_salida = 0
 Sem s_espera_salida [M] = ([M]0)				//Semáforo para controlar la salida del grupo.
 Sem s_acceso_contador_por_tarea [N] = 1			//control de acceso al contador de tareas por grupo.
@@ -28,13 +29,13 @@ process Empleado[i= 1..M] {
 		contador++
 		grupo = nro_grupo						//Le asigno el nro de su grupo.
 		V(s_contador)
-		P(s_espera_entrada)						//Espero al resto del grupo.
+		P(s_espera_entrada[grupo])				//Espero al resto del grupo.
 	}
 	else{
 		contador = 0
 		nro_grupo++
 		for (j= 1..(CANT_POR_GRUPO - 1))
-			V(s_espera_entrada)					//Despierto al resto del grupo.
+			V(s_espera_entrada[grupo])			//Despierto al resto del grupo.
 		V(s_contador)
 		
 		//Acá asigno la tarea, ya que está todo el grupo armado:
@@ -43,7 +44,6 @@ process Empleado[i= 1..M] {
 		nro_tarea++
 		V(s_tarea) 
 	}
-
 
 	P(s_acceso_contador_por_tarea [grupo])
 	while (contador_elementos_por_tarea[grupo]< CANT_ELEMENTOS){
@@ -69,16 +69,7 @@ process Empleado[i= 1..M] {
 	else{ 
 		for (i = 1 to CANT_POR_GRUPO -1)
 			V(s_espera_salida[grupo])
-		V(s_contador_salida)
+		V(s_contador_salida[grupo])
 	}
 
-	//Acá debo modelar la salida de la fábrica, que no debe joder la entrada:
-	//Cómo modelo el caso de entrada y salida?
-
 }
-
-
-NOTA: según ayudante, interferencia se refiere a tener dos semáforos diferentes para entrada y salida. De esta 
-manera se evita cualquier tipo de problema.
-
-DUDA: Todos los grupos deben hacer exactamente X tareas o ese valor se toma de algún sitio y difiere entre grupos?
