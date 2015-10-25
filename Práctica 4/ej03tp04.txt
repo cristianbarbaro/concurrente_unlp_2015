@@ -1,0 +1,50 @@
+chan llamarPersona[5];                   //En este canal estarán esperando los clientes a ser llamados.
+chan consultarCantidadPersonas(int);     //La persona le consulta la cantidad de personas a coordinador, este último avisará cuál es la mejor cola.
+chan informarMejorCola[P](int);          //Já, qué bien vendría una función que devuelva siempre la mejor cola (la vida sería una fiesta).
+chan informarPartida(int);               //El cliente informa al coordinador cuando se va así decrementa su contador.
+chan confirmarAtencion[5];               //Necesito para sincroinizar los dos procesos Caja y Persona, sino Caja comenzaría a atender y tal vez no tiene un cliente esperando.
+
+
+Process Caja [i = 1..5]{
+  int idPersona;
+  while (true){
+    send llamarPersona[i]();
+    receive confirmarAtencion[i]();
+    "Atiende a la persona"
+  }
+}
+
+Process Persona [j=1..P]{
+  int idCaja;
+  send consultarCantidadPersonas(j);
+  receive informarMejorCola[j](idCaja);
+  "Una vez que sabe su cola, se encola y espera a ser llamado.";
+  receive llamarPersona[idCaja]();
+  send confirmarAtencion[idCaja]();
+  "Es atendido.";
+  send informarRetiro(idCaja);
+}
+
+Process Coordinador{
+  Cola cola;
+  Array colas[1..5];                          //Aquí tendré todas las colas, las accedo mediante el índice.
+  Array cantidadEsperando[1..5];              //Cantidad de personas que esperan en cada una de las colas.
+  int colaMin;                                //Es el valor de la cola con menos personas.
+  int idPersona;
+  int idCaja;
+
+  while true{
+
+    if (not_empty(consultarCantidadPersonas)){
+      receive consultarCantidadPersonas(idPersona);
+      colaMin = buscarMinimo(cantidadEsperando);        //Si tengo que implementarla lo hago, pero alta paja: devuelve la posición mínimo en el arreglo.
+      send informarMejorCola[idPersona](colaMin);
+      cantidadEsperando[colaMin]++;                     //Incremento en 1 el contador de las personas esperando en esa cola.
+    }
+
+    [] (not_empty(informarPartida)){
+      receive informarPartida(idCaja);
+      cantidadEsperando[idCaja]--;
+    }
+  }
+}
