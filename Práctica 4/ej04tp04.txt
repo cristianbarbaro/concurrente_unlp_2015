@@ -1,0 +1,71 @@
+//Resolveré este ejercicio de dos maneras distintas, primero lo haré usando un proceso intermedio Oficina
+// y luego lo haré prescindiendo de él.
+
+a) Usando proceso Oficina:
+
+chan dejarReclamo(Reclamo rec);
+chan entregarReclamo(Reclamo rec);
+chan buscarReclamo(int);
+
+Process Portero[i = 1..3]{
+  Reclamo rec;
+  while (true){
+    send buscarReclamo(i);
+    receive entregarReclamo[i](rec);
+    if rec != null
+      atenderReclamo(rec);
+    else
+      "recorrer los pasillos";
+      delay(10);
+  }
+}
+
+Process Oficina{
+  Reclamo rec;
+  int idPortero;
+  while true{
+    //El portero avisa que tiene tiempo para atender un reclamo, me chupa un huevo si hay o no, en tal caso se irá a dar vueltas por ahí.
+    receive buscarReclamo(idPortero);
+    if (not_empty(dejarReclamo))
+      receive dejarReclamo(rec);
+    else
+      rec = null;                                       //Si no hay nada de reclamos, le mando alto null.
+    send entregarReclamo[idPortero](rec);
+  }
+}
+
+Process Persona[j = 1..P]{
+  Reclamo rec;
+  //Crea reclamos infinitamente (porque eso es lo que mejor suele hacer las personas!)
+  while true{
+    rec = generarReclamo();
+    send dejarReclamo(rec);
+  }
+}
+
+
+--------------------------------------------------------------------------------
+
+b) Pensemos ahora en hacerlo sin la Oficina:
+
+chan dejarReclamo;
+
+Process Persona[i = 1..P]{
+  Reclamo rec;
+  while true{
+    rec = generarReclamo();
+    send dejarReclamo(rec);
+  }
+}
+
+Process Portero[j=1..3]{
+  Reclamo rec;
+  //Acá hay que ver si no se está generando un busy waiting.
+  while true{
+    if not_empty(dejarReclamo)
+      receive dejarReclamo(rec);
+      atenderReclamo(rec);
+    else
+      delay(10);
+  }
+}
