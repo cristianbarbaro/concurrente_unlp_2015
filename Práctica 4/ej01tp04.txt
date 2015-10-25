@@ -1,0 +1,100 @@
+a) Usaremos PASAJE DE MENSAJES ASINCRÓNICOS (y seguramente una gran cantidad de canales):
+
+chan pedirLapizColor;
+chan pedirLapizNegro;
+chan pedirLapizCualquiera;
+
+//Asumo que la cantidad de niños de cada tipo es la misma, caso contrario solo se necesita poner una variable para cada tipo.
+chan enviarLapizColor[N](idLapiz);
+chan enviarLapizNegro[N](idLapiz);
+chan enviarLapizCualquiera[N](idLapiz, char tipoLapiz);
+
+chan devolverLapizColor[cantColor];
+chan devolverLapizNegro[cantNegro];
+
+chan lapizColorLibre(int);
+chan lapizNegroLibre(int)
+
+Process Abuela{
+  //Ella es la encargada de administrar el uso de los lápices.
+  int idNiño;
+  int idLapiz;
+  char tipoLapiz;
+  while true{
+    if (not_empty(pedirLapizColor) and not_empty(lapizColorLibre)) then{
+      receive pedirLapizColor(idNiño);
+      receive lapizColorLibre(idLapiz);
+      send enviarLapizColor[idNiño](idLapiz);
+    }
+    [] not_empty(pedirLapizNegro) and not_empty(lapizNegroLibre) then{
+      receive pedirLapizNegro(idNiño);
+      receive lapizNegroLibre(idLapiz);
+      send enviarLapizColor[idNiño](idLapiz);
+    }
+    [] not_empty(pedirLapizCualquiera) then{
+      if not_empty(lapizNegroLibre) then{
+        receive pedirLapizCualquiera(idNiño);
+        receive lapizNegroLibre(idLapiz);
+        send enviarLapizCualquiera[idNiño](idLapiz, 'N');
+      }else if not_empty(lapizColorLibre) then {
+        receive pedirLapizCualquiera(idNiño);
+        receive lapizColorLibre(idLapiz);
+        send enviarLapizCualquiera[idNiño](idLapiz, 'C');
+      }
+    }
+  }
+}
+
+Process NiñoTipoColor[id = 1..N]{
+  int idLapiz;                                          //Necesito poder manipular esta variable internamente.
+  while true{
+    send pedirLapizColor(id);
+    receive enviarLapizColor[id](idLapiz);
+    delay(10);                                          //usa el lapiz antes de devolverlo.
+    send devolverLapizColor[idLapiz]();
+  }
+}
+
+Process NiñoTipoNegro [i = 1..N]{
+  int idLapiz;
+  while true{
+    send pedirLapizNegro(id);
+    receive enviarLapizColor[id](idLapiz);
+    delay(10);
+    send devolverLapizNegro[idLapiz]();
+  }
+}
+
+Process NiñoTipoCualquiera [i = 1..N]{
+  int idLapiz;
+  char tipoLapiz;
+  while true{
+    send pedirLapizCualquiera(id);
+    receive enviarLapizCualquiera[id](idLapiz, tipoLapiz);
+    //Cuando quiera devolver el lapiz, me conviene saber en qué canal debo enviar el mensaje así se hace un poco más fácil.
+    delay(10);
+    if (tipoLapiz == 'N') then{
+      send devolverLapizNegro[idLapiz]();
+    }else{
+      send devolverLapizColor[idLapiz]();
+    }
+  }
+}
+
+Process LapizNegro[i = 1..cantNegro]{
+  while true{
+    send lapizNegroLibre(i);
+    receive devolverLapizNegro[i]();
+  }
+}
+
+Process LapizColor[j = 1..cantColor]{
+  while true{
+    send lapizColorLibre(j);
+    receive devolverLapizColor[j]();
+  }
+}
+
+
+
+b) Ahora usaremos PASAJE DE MENSAJES SINCRÓNICOS:
