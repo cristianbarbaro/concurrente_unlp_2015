@@ -1,0 +1,78 @@
+a) Debo realizarlo con proceso Coordinador:
+
+chan avisarLlegada;
+chan habilitarPista;
+chan avisarHabilitacion;
+chan dejarEntrar;
+
+Process Corredor[i=1..N]{
+  //El corredor llega y avisa al coordinador.
+  send avisarLlegada();
+  //Luego queda esperando la habilitación para, definitivamente, ingresar a la pista.
+  receive dejarEntrar();
+  "Inicia competencia".
+}
+
+Process Coordinador{
+  //Se arma una barrera (usando un for):
+  for i= 1 to N {
+    receive avisarLlegada();
+  }
+  //Una vez que llegaron todos los competidores, debo avisarle al portero que habilite la pista:
+  send habilitarPista();
+  //Ahora debo esperar a que el portero me diga que ya está la pista habilitada para proseguir.
+  receive avisarHabilitacion();
+  //Ahora, tenemos que avisarle a todos los competidores que pueden entrar a la pista para competir:
+  for i = 1 to N {
+    send dejarEntrar();
+  }
+}
+
+Process Portero{
+  //El portero se queda esperando a que le avise en coordinador que llegaron todos los competidores:
+  receive habilitarPista();
+  "El portero habilita la pista";
+  delay(random());
+  send avisarHabilitacion();
+}
+
+
+----------------------------------------------------------------------------------------------------
+
+b) Ahora debo prescindir del proceso coordinador, esto implica reescribir un poco la solución:
+//Al comenzar a resolver el problema, me di cuenta que el portero no podría hacer las partes de
+// coordinador ya que implicaría que debe contarlos, entonces acá tenemos que pensar en meter todo dentro
+//del proceso corredor.
+
+chan avisarLLegadaTodos;
+chan dejarPasar;
+chan continuar;
+chan avisarLlegue;
+
+Process Corredor [i = 1..N]{
+  if (i == 1) {
+    //Como no tenemos el coordinador de antes, debemos hacer que uno de los corredores se encargue de contabilizar la llegada del resto:
+    for i = 1 to N-1 {
+      receive avisarLlegue();
+    }
+    //Una vez que llegaron todos, debo pedirle al portero que me habilite para ingresar:
+    send avisarLlegadaTodos();
+    receive dejarPasar();
+    //Ahora aviso a todos para que continuen hacia la pista:
+    for i = 1 to N -1{
+      send continuar();
+    }
+  }else{
+    send avisarLlegue();
+    receive continuar();
+  }
+  "Iniciar la competencia".
+  Competir();
+}
+
+Process Portero [i = 1..N]{
+  receive avisarLlegadaTodos();
+  //Habilita la entrada.
+  delay(random());
+  send dejarPasar();
+}
