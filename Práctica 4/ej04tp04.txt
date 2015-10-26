@@ -26,7 +26,7 @@ Process Oficina{
   while true{
     //El portero avisa que tiene tiempo para atender un reclamo, me chupa un huevo si hay o no, en tal caso se irá a dar vueltas por ahí.
     receive buscarReclamo(idPortero);
-    if (not_empty(dejarReclamo))
+    if (not empty(dejarReclamo))
       receive dejarReclamo(rec);
     else
       rec = null;                                       //Si no hay nada de reclamos, le mando alto null.
@@ -55,14 +55,18 @@ Process Persona[i = 1..P]{
   while true{
     rec = generarReclamo();
     send dejarReclamo(rec);
+    delay(random());        //Tiempo en el que no jode a nadie.
   }
 }
 
 Process Portero[j=1..3]{
   Reclamo rec;
   //Acá hay que ver si no se está generando un busy waiting.
+  //Acá existe un problema algo grave que iría en contra de lo que dice el enunciado (ningún portero debe permanecer ocioso)
+  //Si dos procesos preguntan si dejarReclamo está vacío a la vez, ambos pasarán el if, pero solo uno tomará el mensaje mientras
+  //el otro se la chupa porque tiene que esperar en el receive. (consultarlo.) Esto está salvado en la solución anterior.
   while true{
-    if not_empty(dejarReclamo)
+    if not empty(dejarReclamo)
       receive dejarReclamo(rec);
       atenderReclamo(rec);
     else
