@@ -1,0 +1,59 @@
+//Bueno, acá terminé viendo los viejos apuntes, me rompí un poco la cabeza pero vi que no iba a funcionar.
+//El problema era que no tenía modo de saber cómo se iba a modificar el estado, sin un proceso Estado (es lo
+//que el apunte me dijo que faltaba) podría ocurrir que Reloj y Encargado la cagasen al informarle al camión.
+//En otras palabras, era el encargado el que iba a setearle el estado al siguiente camión una vez se hubiera ido el otro.
+//Tenía dos canales distintos para que el camión hiciera una u otra cosa, entonces eso complicaba el código.
+
+chan iniciarReloj[1..N];
+chan avisarLlegada(int);
+chan informarFinalizacion();
+chan setearEstado[1..N];
+chan avisarEstado(Sring);
+chan informarAlCamion[1..N](String);
+
+Process Camion[i = 1..N]{
+  String estado;
+
+  send iniciarReloj[i]();
+  send avisarLlegada(i);
+  receive informarAlCamion[i](estado);
+  if (estado == 'atender')
+    Descargar();
+  send informarFinalizacion();
+}
+
+
+Process Encargado{
+  int cantidad;
+  int idCamion;
+  String estado;
+  cantidad = 0;
+  while (cantidad != N)
+    cantidad++;
+    receive avisarLlegada(idCamion);
+    send setearEstado[idCamion]('atender');
+    receive avisarEstado(estado);
+    send informarAlCamion[idCamion](estado);
+    receive informarFinalizacion();
+}
+
+Process Estado[i=1..N]{
+  String estado;
+
+  receive setearEstado[i](estado);            //Un proceso dejará el mensaje acá primero, el otro lo hará luego o se encolará. Acá evito cualquier problema.
+  if (estado == 'atender')
+    send avisarEstado('atender');
+    receive setearEstado[i](estado);         //Esto no sé si es necesario, pero espera por el mensaje del reloj (queda para consultarlo).
+  else
+    send avisarEstado('irse');
+    receive setearEstado[i]();            //Debo esperar por el mensaje del encargado (tampoco sé si es necesario), por las dudas lo tomo.
+}
+
+Process Reloj[i = 1..N]{
+  receive iniciarReloj[i]();
+  delay(120);
+  send setearEstado[i]('irse');             //Seteo el estado para tomarse el palo.
+}
+
+
+--------------------------------------------------------------------------------
