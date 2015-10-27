@@ -24,7 +24,7 @@ Process Oficina{
   Reclamo rec;
   int idPortero;
   while true{
-    //El portero avisa que tiene tiempo para atender un reclamo, me chupa un huevo si hay o no, en tal caso se irá a dar vueltas por ahí.
+    //El portero avisa que tiene tiempo para atender un reclamo, si no hay, se irá a dar vueltas por ahí.
     receive buscarReclamo(idPortero);
     if (not empty(dejarReclamo))
       receive dejarReclamo(rec);
@@ -47,6 +47,7 @@ Process Persona[j = 1..P]{
 --------------------------------------------------------------------------------
 
 b) Pensemos ahora en hacerlo sin la Oficina:
+//Bueno, como se menciona en los comentarios, no me sirve esta solución debido a la naturaleza del enunciado (si el portero solo tuviera que atender pedidos, serviría, siempre que saque el if para que no haya busy waiting).
 
 chan dejarReclamo;
 
@@ -61,10 +62,10 @@ Process Persona[i = 1..P]{
 
 Process Portero[j=1..3]{
   Reclamo rec;
-  //Acá hay que ver si no se está generando un busy waiting.
-  //Acá existe un problema algo grave que iría en contra de lo que dice el enunciado (ningún portero debe permanecer ocioso)
-  //Si dos procesos preguntan si dejarReclamo está vacío a la vez, ambos pasarán el if, pero solo uno tomará el mensaje mientras
-  //el otro se la chupa porque tiene que esperar en el receive. (consultarlo.) Esto está salvado en la solución anterior.
+  //Acá se está generando un busy waiting.
+  //Acá existe un problema algo grave que iría en contra de lo que dice el enunciado (ningún portero debe permanecer ocioso).
+  //Si dos procesos preguntan si dejarReclamo está vacío a la vez, ambos pasarán el if, pero solo uno tomará el mensaje 
+  //mientras el otro tiene que esperar en el receive. (consultarlo.) Esto está salvado en la solución anterior.
   while true{
     if not empty(dejarReclamo)
       receive dejarReclamo(rec);
@@ -73,3 +74,5 @@ Process Portero[j=1..3]{
       delay(10);
   }
 }
+
+NOTA: pensar en resolver el problema con guardas, pero este caso funciona igual sin necesidad de nada extra.
