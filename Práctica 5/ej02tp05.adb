@@ -11,17 +11,40 @@ TASK BODY Empleado IS
 END Empleado;
 
 
-Task Cliente IS
+Task TYPE Cliente IS
+  entry id(int);
   entry estado(OUT estado: String);
 END Cliente;
 
-TASK BODY Cliente IS
+TASK TYPE BODY Cliente IS
+  var int miID;
+BEGIN
+  ACCEPT id(in valor: int) DO
+    miID = valor;
+  end id;
+  
   SELECT
     Empleado.atender();
   OR DELAY 600
     "El cliente se va";
   END SELECT;
 END Cliente;
+
+
+/* 
+Asumo que hay N clientes.
+Cuando tengo muchas tareas, necesito declarar a la tarea con un TYPE y luego meterlo en un arreglo, por ejemplo. Si tuviera un entry asociado,
+lo llamaría como a un arreglo común. En este ejercicio no hay problema.
+*/
+
+VAR clientes: array(1..N) of Cliente;
+
+/* Programa principal */
+BEGIN 
+  for i = 1..N
+    personas(i).id(i)
+  end for;
+END
 
 /*
 Tener en cuenta un par de cosas:
