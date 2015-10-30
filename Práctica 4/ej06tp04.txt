@@ -1,0 +1,77 @@
+chan entregarPedido[C](Pedido pedido);
+chan hacerPedido(int, Pedido);
+chan darPedidoVendedor[3](Pedido);
+chan solicitarPedido(int);
+chan enviarPedidoCocinero(int, Pedido);
+chan avisarFinalCocineros();
+chan avisarFinalVendedores();
+
+Process Cocinero [i = 1..2]{
+  Pedido pedido;
+  Boolean fin = false;
+  int idCliente;
+
+  while (not fin){
+    receive enviarPedidoCocinero(idCliente, pedido);
+    cocinarPedido(pedido);
+    send entregarPedido[idCliente](pedido);
+    if (not empty(avisarFinalCocineros)) -> {
+      receive avisarFinalCocineros();
+      fin = true;
+    }
+  }
+}
+
+Process Vendedor [i = 1..3]{
+  Pedido pedido;
+  Boolean fin = false;
+  int idCliente;
+
+  while (not fin){
+    send solicitarPedido(i);
+    receive darPedidoVendedor[i](idCliente, pedido);
+    //Debido a que debe realizar tareas pronto, puede llegar a recibir un null:
+    if (not pedido == null) then{
+      send enviarPedido(idCliente, pedido);
+    }else{
+      "Reponer un pack de gaseosas";
+    }
+    if (not empty(avisarFinalVendedores)) then{
+      receive avisarFinalVendedores();
+      fin = true;
+    }
+  }
+}
+
+Process CoordinadorPedidos{
+  Cola pedidos;
+  Cola idClientes;
+  integer cantClientes;
+  integer idCliente, idVendedor;
+
+  cantClientes = 0;
+  while (cantClientes < C)
+    if (not empty (hacerPedido)) ->{
+      receive hacerPedido(idCliente, pedido);
+      pedidos.push(pedido);
+      idClientes.push(idClientes);
+      cantClientes++;
+    }
+    [] (not empty(solicitarPedido)) -> {
+      receive solicitarPedido(idVendedor);
+      if (not empty(pedidos)) then {
+        pedido = pedidos.pop();
+        idCliente = idClientes.pop();
+        send darPedidoVendedor(idCliente, pedido);
+      }else{
+        send darPedidoVendedor(-1, null);
+      }
+    }
+}
+
+Process Cliente [i=1..C]{
+  Pedido pedido = generarPedido();
+
+  send hacerPedido(i, pedido);
+  receive entregarPedido[i](pedido);
+}
