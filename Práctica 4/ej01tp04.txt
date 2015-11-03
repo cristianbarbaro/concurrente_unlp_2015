@@ -1,4 +1,6 @@
+-----------------------------------------------------------------------------------------
 a) Usaremos PASAJE DE MENSAJES ASINCRÓNICOS (y seguramente una gran cantidad de canales):
+-----------------------------------------------------------------------------------------
 
 chan pedirLapizColor;
 chan pedirLapizNegro;
@@ -21,18 +23,21 @@ Process Abuela{
   int idLapiz;
   char tipoLapiz;
   while true{
-    if (not_empty(pedirLapizColor) and not_empty(lapizColorLibre)) then{
+    if (not empty(pedirLapizColor) and not empty(lapizColorLibre)) ->
+    {
       receive pedirLapizColor(idNiño);
       receive lapizColorLibre(idLapiz);
       send enviarLapizColor[idNiño](idLapiz);
     }
-    [] not_empty(pedirLapizNegro) and not_empty(lapizNegroLibre) then{
+    [] not empty(pedirLapizNegro) and not_empty(lapizNegroLibre) ->
+    {
       receive pedirLapizNegro(idNiño);
       receive lapizNegroLibre(idLapiz);
       send enviarLapizColor[idNiño](idLapiz);
     }
-    [] not_empty(pedirLapizCualquiera) then{
-      if not_empty(lapizNegroLibre) then{
+    [] not empty(pedirLapizCualquiera) ->
+    {
+      if not empty(lapizNegroLibre) then{
         receive pedirLapizCualquiera(idNiño);
         receive lapizNegroLibre(idLapiz);
         send enviarLapizCualquiera[idNiño](idLapiz, 'N');
@@ -96,5 +101,96 @@ Process LapizColor[j = 1..cantColor]{
 }
 
 
-
+--------------------------------------------------------------------------------
 b) Ahora usaremos PASAJE DE MENSAJES SINCRÓNICOS:
+--------------------------------------------------------------------------------
+
+
+Process Abuela{
+  integer IdNiño, idLapiz;
+  Cola lapicesColor;
+  Cola lapicesNegro;
+  char tipoLapiz;
+
+  while true{
+    if (LapizColor[*]libre(idLapiz)) ->
+      lapicesColor.push (idLapiz);
+
+    [] (LapizNegro[*]?libre(idLapiz)) ->
+      lapicesNegro.push (idLapiz);
+
+    [] ((not empty (lapicesColor)); NiñoTipoColor[*]?pedir(idNiño)) ->{
+      idLapiz = lapicesColor.pop();
+      NiñoTipoColor[idNiño]!dar(idLapiz);
+    }
+    [] ((not empty (lapicesNegro)); NiñoTipoNegro[*]?pedir(idNiño)) ->{
+      idLapiz = lapicesNegro.pop();
+      NiñoTipoNegro[idNiño]!dar(idLapiz);
+    }
+    [] ((not empty(lapicesNegro)); NiñoTipoCualquiera[*]?pedir(idNiño)) ->{
+      idLapiz = lapicesNegro.pop();
+      NiñoTipoCualquiera[idNiño]!dar(idLapiz, 'negro');
+    }
+    [] ((not empty(LapicesColor)); NiñoTipoCualquiera[*]?pedir(idNiño)) -> {
+      idLapiz = lapicesColor.pop();
+      NiñoTipoCualquiera[idNiño]!dar(idLapiz, 'color');
+    }
+  }
+}
+
+
+Process NiñoTipoColor[i=1..N]{
+  integer idLapiz;
+  while (true){
+    Abuela!pedir(i);
+    Abuela?dar(idLapiz);
+    "Uso el lapiz";
+    LapizColor[idLapiz]!liberar();
+  }
+}
+
+
+Process NiñoTipoNegro[i=1..N]{
+  integer idLapiz;
+  while (true){
+    Abuela!pedir(i);
+    Abuela?dar(idLapiz);
+    "Uso el lapiz";
+    LapizNegro[idLapiz]!liberar();
+  }
+}
+
+
+Process NiñoTipoCualquiera[i=1..N]{
+  integer idLapiz;
+  string tipoLapiz;
+  while (true){
+    Abuela!pedir(i);
+    Abuela?dar(idLapiz, tipoLapiz);
+    if (tipoLapiz == 'negro')
+      LapizNegro[idLapiz]!liberar();
+    else
+      LapizColor[idLapiz]!liberar();
+  }
+  
+}
+
+
+Process LapizNegro[i = 1..cantNegro]{
+  Abuela!libre(i);
+  while true {
+    if (NiñoTipoCualquiera[*]?liberar()) -> Abuela!libre(i);
+    [] (NiñoTipoNegro[*]?liberar()) -> Abuela!libre(i);
+  }
+}
+
+
+Process LapizColor[j = 1..cantColor]{
+  Abuela!libre(i);
+  while true {
+    if (NiñoTipoCualquiera[*]?liberar()) -> Abuela!libre(j);
+    [] (NiñoTipoColor[*]?liberar()) -> Abuela!libre(j);
+  }
+}
+
+
