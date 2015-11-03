@@ -110,7 +110,7 @@ Process Abuela{
   integer IdNiño, idLapiz;
   Cola lapicesColor;
   Cola lapicesNegro;
-  char tipoLapiz;
+  string tipoLapiz;
 
   while true{
     if (LapizColor[*]libre(idLapiz)) ->
@@ -194,3 +194,47 @@ Process LapizColor[j = 1..cantColor]{
 }
 
 
+--------------------------------------------------------------------------------
+c) Ahora debo seguir resolviendo con PMS, pero cambia enunciado.
+Para este problema debo pensarlo al revéz de cómo lo hice en b).
+En este caso lo que tendría que almacenar son los pedidos de lapices en colas
+y consultar por ellas antes de ceder el lapiz a algún niño.
+--------------------------------------------------------------------------------
+
+
+Process Abuela{
+  integer IdNiño, idLapiz;
+  string tipoLapiz;
+  Cola pedidosNiñosNegro;
+  Cola pedidosNiñosColor;
+  Cola pedidosNiñosCualquiera;
+
+  while (true){
+    if (NiñoTipoColor[*]?pedir(idNiño)) ->
+      pedidosNiñosColor.push(idNiño);
+
+    [] (NiñoTipoNegro[*]?pedir(idNiño)) ->
+      pedidosNiñosNegro.push(idNiño);
+
+    [] (NiñoTipoCualquiera[*]?pedir(idNiño)) ->
+      pedidosNiñosCualquiera.push(idNiño);
+
+    [] ((not empty (pedidosNiñosColor)); LapizColor[*]?libre(idLapiz)) ->{
+      idNiño = pedidosNiñosColor.pop();
+      NiñoColor[idNiño]!dar(idLapiz);
+    }
+    [] ((not empty(pedidosNiñosNegro)); LapizNegro[*]?libre(idLapiz)) ->{
+      idNiño = pedidosNiñosNegro.pop();
+      NiñoNegro[idNiño]!dar(idLapiz);
+    }
+    [] ((not empty(pedidosNiñosCualquiera) and (empty(pedidosNiñosColor))); LapizColor[*]?libre(idLapiz)) ->
+      idNiño = pedidosNiñosCualquiera.pop();
+      NiñoCualquiera[idNiño]!dar(idLapiz, 'color');
+    }
+    [] ((not empty(pedidosNiñosCualquiera) and (empty(pedidosNiñosNegro))); LapizNegro[*]?libre(idLapiz)) ->
+      idNiño = pedidosNiñosCualquiera.pop();
+      NiñoCualquiera[idNiño]!dar(idLapiz, 'negro');
+  }
+}
+
+//El resto de los procesos permanecen sin modificación ya que solo la Abuela administra todo.
