@@ -1,0 +1,33 @@
+Resolver con semáforos la siguiente situación. En un corralón de materiales 
+trabajan 5 empleados que deben cargar un camión con exactamente 128 
+bolsas de cemento. Maximizar la concurrencia.
+Notas:
+	- Cada empleado puede cargar 0, 1 o más bolsas.
+	- No se deben tomar bolsas de más.
+	- Los empleados tienen que irse cuando no tienen que hacer más trabajo.
+	- Solo se pueden usar procesos Empleado.
+----------------------------------------------------------------------------
+
+Sem c_contador = 1;				//Semáforo para manipular cantidad de bolsas a cargar.
+Sem c_camion = 1;				//para controlar el acceso al camión (cuando voy a dejar la bolsa).
+
+int cantidad = 0;
+
+const BOLSAS = 128;
+
+Process Empleado[i=1..5]{
+
+	P(c_contador);
+	while (cantidad < BOLSAS){
+		cantidad++;
+		"Toma una bolsa";
+		V(c_contador);
+		"Lleva las bolsas hasta el camión";
+		//Exclusión mutua para ponerla en el camión.
+		P(c_camion);
+		"Tiro la bolsa en el camión";
+		V(c_camion);
+		P(c_contador);
+	}
+	V(c_contador);
+}

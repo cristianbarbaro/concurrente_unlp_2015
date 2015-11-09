@@ -1,0 +1,39 @@
+Sem s_inicio = 1;				//Aviso que llegué, para cada uno de los periféricos.
+Sem s_llamado[1..10] = 0;		//Esto es para la llamada.
+Sem s_espera_respuesta[1..10];	//Para esperar por la respuesta.
+
+integer contador = 0;
+Array of string resultados[1..10];
+
+Process Periferico[i=1..10]{
+	String resultado;
+
+	"El proceso hace todo lo que debe para iniciar y luego le avisa al Central que ya está listo";
+	V(s_inicio);	
+
+	while (true){
+		P(s_llamado[i]);
+		resultados[i] = obtenerResultado();
+		V(s_espera_respuesta[i]);
+	}
+}
+
+Process Central{
+	int tarea;
+	String resultado;
+
+	P(s_inicio);				//Espera que vayan llegando los procesos.
+	while (contador < 10){
+		contador++;
+		P(s_inicio);
+	}
+
+	while (true){
+		"lleva a cabo más trabajo";
+		tarea = TrabajoProcesoCentral();
+		V(s_llamado[tarea]);
+		P(s_espera_respuesta[tarea]);
+		resultado = resultados[tarea];
+		"Hace lo que tenga que hacer con los resultados";
+	}
+}

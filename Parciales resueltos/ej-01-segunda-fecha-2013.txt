@@ -1,0 +1,58 @@
+Process Persona[i=1..200]{
+	int nroLancha;
+
+	nroLancha = NumeroLancha();
+	AdminLancha.subirLancha[nroLancha]();
+	AdminBarco.subirBarco();
+	//Debo ver cómo administrar la bajada de la lancha y subida al barco.
+}
+
+Process Lancha[k=1..10]{
+
+	AdminLancha.arrancarLancha[k]();
+	"El tiempo de espera que hay dentro del semáforo marca el viaje hasta el barco.";
+
+}
+
+Monitor AdminLancha[j=1..10]{
+	Condition c_personas;
+	Condition c_lancha[1..10];
+	int contador_personas;
+	
+	procedure subirLancha(){
+		contador_personas++;
+		if (contador_personas < 20){
+			wait(c_personas);
+		}else{
+			signal(c_lancha[j]);		//Si la lancha se durmió antes, la despierto. Caso contrario queda sin efecto el signal.
+		}
+	}
+
+	procedure arrancarLancha(){
+		if (contador_personas != 20){
+			wait(c_lancha[j]);
+		}
+		delay (600);
+		AdminBarco.abordarBarco();
+		signal_all(c_personas);    		//despierto a todas las personas porque ya llegaron.
+	}
+}
+
+Monitor AdminBarco{
+	Condition c_lanchas;
+	int contador_lanchas;
+
+	procedure abordarBarco(){
+		contador_lanchas++;
+		if (contador_lanchas < 10){
+			wait (c_lanchas);
+		}else{
+			signal_all(c_lanchas);			
+		}
+	}
+
+	procedure subirBarco(){
+		delay(random());	//Acá se asume que sube de a uno.
+	}
+}
+

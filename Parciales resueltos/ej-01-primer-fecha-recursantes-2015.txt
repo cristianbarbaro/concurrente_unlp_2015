@@ -1,0 +1,51 @@
+Resolver con SEMÁFOROS la siguiente situación. En un torneo de arte hay P 
+Participantes que realizan una pintura cada uno. Al terminar dejan la pintura para ser 
+evaluada y luego esperan el resultado, lo imprimen y se retiran. Además existe un 
+Evaluador que evalúa las pinturas de acuerdo al orden en que las fueron terminando. 
+El Evaluador toma una pintura, la evalúa y le da la nota al participante 
+correspondiente. 
+Nota: No se puede usar una estructura auxiliar para almacenar las notas de los 
+participantes. Maximizar la concurrencia.
+
+--------------------------------------------------------------------------------------
+Sem s_cola_id = 1;
+Sem s_nota = 1;
+Sem avisar_fin = 0;				//Le aviso al evaluador que terminé la pintura.
+Sem esperar_nota[1..P] = 0;		//Arreglo para esperar la nota del evaluador.
+
+Cola id;
+int nota;
+Array of Pintura pinturas[1..P];
+
+Process Participante[i=1..P]{
+
+	pinturas[i] = hacerPintura();
+	P(s_cola_id);
+	id.push(i);
+	V(s_cola_id);
+	V(avisar_fin);
+	P(esperar_nota[i]);
+	miNota = nota;
+	V(s_nota);
+	imprimirNota(miNota);
+}
+
+Process Evaluador{
+	int contador = 0;
+	int idParticipante;
+	Pintura pintura;
+
+	while (contador < P){
+		P(avisar_fin);
+		contador++;
+		P(s_cola_id);
+		idParticipante = id.pop();
+		V(s_cola_id);
+		pintura = pinturas[idParticipante];
+		puntaje = analizarPintura(pintura);
+		P(s_nota);							//Qué pasa si alguno de los participantes tarda en leer la nota y yo ya le puedo dar la nota a otro? Debo esperar.
+		nota = puntaje;
+		V(esperar_nota[idParticipante]);
+	}
+}
+

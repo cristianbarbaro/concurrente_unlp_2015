@@ -1,0 +1,47 @@
+//Ejercicio parcial 2015 recursantes 1° Fecha:
+
+
+Process Radar [i=1..10]{
+  Señal señal;
+
+  while (true){
+    delay(15);
+    señal = detectarSeñal();
+    Coordinador!enviarSeñal(i,señal);
+  }
+}
+
+Process Coordinador{
+  Cola cola;
+  while true{
+    if (Radar[*]?enviarSeñal(idRadar, señal)) ->
+      cola.push(señal);
+    [] (not empty(cola); Detector?libre()) ->{
+      señal = cola.pop();
+      Detector!ReenviarSeñal(señal);
+  }
+}
+
+Process Detector{
+  Cola cola;
+  Resultado res;
+  while (true){
+      Coordinador!libre();
+      Coordinador?ReenviarSeñal(señal);
+      PREPROCESAR(señal);
+      Reconocedor!enviarResultado(señal);
+      Reconocedor?devolverResultado(res);
+      "Hace cosas chanchas con el resultado";
+    }
+  }
+}
+
+Process Reconocedor{
+  Resultado res;
+  Señal señal;
+  while (true) {
+    Detector?.enviarResultado(señal);
+    res = ANALIZAR(señal);
+    Detector!devolverResultado(res);
+  }
+}
